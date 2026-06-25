@@ -1208,6 +1208,37 @@ router.get("/order-details/:orderId", async (req, res) => {
 
 });
 
+// mark-sent process
+router.post("/mark-sent", async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    if (!orderId) {
+      return res.status(400).json({ success: false, error: "Missing orderId" });
+    }
+
+    const pool = await poolPromise;
+
+    const updateRes = await pool.request()
+      .input("oid", sql.NVarChar(100), orderId)
+      .query(`
+        UPDATE RestaurantOrderDetailCur 
+        SET StatusCode = 2
+        WHERE OrderId IN (
+          SELECT OrderId FROM RestaurantOrderCur WHERE OrderNumber = @oid
+        ) AND StatusCode <> 0
+      `);
+
+    res.json({ success: true, updatedCount: updateRes.rowsAffected[0] });
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
 //online payment process
 router.post("/payment-status", async (req, res) => {
   try {
