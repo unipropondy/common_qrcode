@@ -85,6 +85,8 @@ export default function LoginPage({ onLoginSuccess }) {
   const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successUser, setSuccessUser] = useState("");
+  const [showGiftModal, setShowGiftModal] = useState(false);
+  const [signedUpUser, setSignedUpUser] = useState(null);
 
   // Sign In fields
   const [siUsername, setSiUsername] = useState("");
@@ -173,10 +175,8 @@ export default function LoginPage({ onLoginSuccess }) {
       if (data.success) {
         localStorage.setItem("qr_pos_user", JSON.stringify(data.user));
         setSuccessUser(data.user.FullName || data.user.UserName || suUsername.trim());
-        setShowSuccess(true);
-        setTimeout(() => {
-          if (onLoginSuccess) onLoginSuccess(data.user);
-        }, 1400);
+        setSignedUpUser(data.user);
+        setShowGiftModal(true);
       } else {
         setError(data.message || "Registration failed. Please try again.");
       }
@@ -422,6 +422,34 @@ export default function LoginPage({ onLoginSuccess }) {
         <div className="login-loading-overlay" role="status" aria-live="polite">
           <div className="login-large-spinner" />
           <div className="login-loading-text">Processing...</div>
+        </div>
+      )}
+
+      {/* Gift Modal */}
+      {showGiftModal && (
+        <div className="login-success-overlay" role="dialog" aria-modal="true">
+          <div className="login-success-box" style={{ background: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 25px 50px rgba(0,0,0,0.1)' }}>
+            <div className="login-success-icon" style={{ background: 'linear-gradient(135deg, #f97316, #ea6b0e)', boxShadow: '0 0 0 12px rgba(249, 115, 22, 0.15)' }}>
+              <CheckIcon />
+            </div>
+            <div className="login-success-title" style={{ color: '#1f2937' }}>Welcome!</div>
+            <div className="login-success-sub" style={{ color: '#6b7280', fontSize: '15px', marginBottom: '16px' }}>
+              As a new customer, you can receive a gift at the counter.
+            </div>
+            <button
+              className="login-submit-btn"
+              onClick={() => {
+                setShowGiftModal(false);
+                setShowSuccess(true);
+                setTimeout(() => {
+                  if (onLoginSuccess) onLoginSuccess(signedUpUser);
+                }, 1400);
+              }}
+              style={{ marginTop: '8px' }}
+            >
+              Awesome!
+            </button>
+          </div>
         </div>
       )}
 
