@@ -151,6 +151,11 @@ export default function LoginPage({ onLoginSuccess }) {
       setError("Phone number is required.");
       return;
     }
+    const phoneDigits = suPhone.replace(/\D/g, "");
+    if (phoneDigits.length <= 7) {
+      alert("Phone number must be more than 7 digits.");
+      return;
+    }
     if (suPassword !== suConfirm) {
       setError("Passwords do not match.");
       return;

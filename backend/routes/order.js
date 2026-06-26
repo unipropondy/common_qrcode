@@ -141,10 +141,12 @@ async function syncToProfessionalTables(transaction, tableId, displayOrderId, it
   const headerCheck = await transaction.request()
     .input("orderNo", sql.NVarChar(50), cleanOrderNo)
     .input("tableNo", sql.VarChar(20), actualTableNo)
+    .input("userId", sql.UniqueIdentifier, toGuidOrNull(finalUserId) || DEFAULT_GUID)
     .query(`
       SELECT TOP 1 OrderId FROM RestaurantOrderCur WITH (UPDLOCK)
       WHERE OrderNumber = @orderNo 
       OR (LTRIM(RTRIM(Tableno)) = LTRIM(RTRIM(@tableNo)) AND LTRIM(RTRIM(@tableNo)) <> 'TAKEAWAY' AND (isOrderClosed = 0 OR isOrderClosed IS NULL)) 
+      AND CreatedBy = @userId
       ORDER BY CreatedOn DESC
     `);
 
@@ -658,7 +660,7 @@ router.post("/send", async (req, res) => {
 router.get("/cart/:tableId", async (req, res) => {
   try {
     const { tableId } = req.params;
-    const { orderId: queryOrderId } = req.query; // Support passing orderId directly
+    const { orderId: queryOrderId, userId } = req.query; // Support passing orderId directly
 
     if (!tableId || tableId === "undefined" || tableId === "null" || tableId.length < 5) {
       return res.json({ items: [], currentOrderId: null });
@@ -691,6 +693,7 @@ router.get("/cart/:tableId", async (req, res) => {
       .input("tid", sql.UniqueIdentifier, cleanId)
       .input("tableNo", sql.VarChar(20), finalTableNo)
       .input("orderNo", sql.NVarChar(50), finalOrderNo)
+      .input("userId", sql.UniqueIdentifier, userId)
       .query(`
         SELECT 
   d.OrderDetailId as lineItemId,
@@ -715,6 +718,7 @@ JOIN RestaurantOrderCur h ON d.OrderId = h.OrderId
 LEFT JOIN DishMaster dish ON d.DishId = dish.DishId
 WHERE
   h.isOrderClosed = 0
+  AND h.CreatedBy = @userId
   AND d.StatusCode <> 0
   AND d.StatusCode <> 4
   AND (
@@ -724,6 +728,7 @@ WHERE
       FROM RestaurantOrderCur
       WHERE Tableno = @tableNo
         AND isOrderClosed = 0
+         AND CreatedBy = @userId
       ORDER BY CreatedOn DESC
     )
   )
